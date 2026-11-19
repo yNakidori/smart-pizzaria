@@ -6,6 +6,9 @@ import { CustomInput, CustomButton } from '../components';
 
 import api from '../services/api';
 
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const MIN_PASSWORD_LENGTH = 6;
+
 export default function Register({ navigation }) {
   const insets = useSafeAreaInsets();
 
@@ -16,8 +19,21 @@ export default function Register({ navigation }) {
   const [loading, setLoading] = useState(false);
 
   const handleRegister = async () => {
-    if (!nome || !email || !password || !confirmPassword) {
+    const nomeTrimmed = nome.trim();
+    const emailNormalizado = email.trim().toLowerCase();
+
+    if (!nomeTrimmed || !emailNormalizado || !password || !confirmPassword) {
       Alert.alert('Atenção', 'Preencha todos os campos.');
+      return;
+    }
+
+    if (!EMAIL_REGEX.test(emailNormalizado)) {
+      Alert.alert('Atenção', 'Digite um endereço de e-mail válido.');
+      return;
+    }
+
+    if (password.length < MIN_PASSWORD_LENGTH) {
+      Alert.alert('Atenção', `A senha deve ter no mínimo ${MIN_PASSWORD_LENGTH} caracteres.`);
       return;
     }
 
@@ -31,8 +47,8 @@ export default function Register({ navigation }) {
 
       // Comunica com o backend real
       await api.post('/auth/register', {
-        nome,
-        email: email.trim().toLowerCase(),
+        nome: nomeTrimmed,
+        email: emailNormalizado,
         password
       });
 
@@ -43,7 +59,7 @@ export default function Register({ navigation }) {
     } catch (error) {
       console.log('Erro no registo:', error);
       Alert.alert(
-        'Erro ao cadastrar', 
+        'Erro ao cadastrar',
         error.response?.data?.error || 'Não foi possível criar a conta. Verifique a conexão.'
       );
     } finally {
@@ -81,6 +97,8 @@ export default function Register({ navigation }) {
             label="E-MAIL"
             placeholder="seu@email.com"
             keyboardType="email-address"
+            autoCapitalize="none"
+            autoCorrect={false}
             isDark={true}
             value={email}
             onChangeText={setEmail}
